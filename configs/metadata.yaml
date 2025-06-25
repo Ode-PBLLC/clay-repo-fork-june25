@@ -28,9 +28,9 @@ sentinel-2-l2a:
       swir16: 2388.
       swir22: 1835.
     std:
-      blue: 1809.
-      green: 1757.
-      red: 1888.
+      blue: 704.
+      green: 402.
+      red: 336.
       rededge1: 1870.
       rededge2: 1732.
       rededge3: 1697.

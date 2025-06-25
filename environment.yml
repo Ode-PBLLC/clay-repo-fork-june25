@@ -13,9 +13,10 @@ dependencies:
     - einops~=0.7.0
     - geopandas
     - jsonargparse[signatures]>=4.27.7
-    - lightning
+    - lightning==2.4.0
     - matplotlib
     - python-box
+    - s2cloudless
     - scikit-image
     - scikit-learn
     - timm
