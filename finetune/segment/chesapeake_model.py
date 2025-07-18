@@ -63,8 +63,9 @@ class ChesapeakeSegmentor(L.LightningModule):
         Returns:
             torch.Tensor: The segmentation logits.
         """
-        waves = torch.tensor([0.65, 0.56, 0.48, 0.842])  # NAIP wavelengths
-        gsd = torch.tensor(1.0)  # NAIP GSD
+        #waves = torch.tensor([0.65, 0.56, 0.48, 0.842])  # Edit - NAIP wavelengths
+        waves = torch.tensor([0.493,0.56,0.665,0.704,0.74,0.783,0.842,0.865,1.61,2.19]) # Edit - S2 wavelengths
+        gsd = torch.tensor(10)  # S2 GSD
 
         # Forward pass through the network
         return self.model(
@@ -126,10 +127,10 @@ class ChesapeakeSegmentor(L.LightningModule):
         outputs = self(batch)
         outputs = F.interpolate(
             outputs,
-            size=(224, 224),
+            size=(64, 64), # Edit - Resize to match labels size
             mode="bilinear",
             align_corners=False,
-        )  # Resize to match labels size
+        )  
 
         loss = self.loss_fn(outputs, labels)
         iou = self.iou(outputs, labels)

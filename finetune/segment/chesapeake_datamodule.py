@@ -46,10 +46,14 @@ class ChesapeakeDataset(Dataset):
         )
 
         # Load chip and label file names
-        self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")][
-            :1000
-        ]
-        self.labels = [re.sub("_naip-new_", "_lc_", chip) for chip in self.chips]
+        #self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")][
+        #    :1000
+        #]
+        #self.labels = [re.sub("_naip-new_", "_lc_", chip) for chip in self.chips]
+        self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")]
+        self.labels = [chip for chip in self.chips]  # Same names, different directory
+        print(f"Found {len(self.chips)} image chips in {self.chip_dir}")
+        print(f"Found {len(self.labels)} label chips in {self.label_dir}")      
 
     def create_transforms(self, mean, std):
         """
@@ -85,15 +89,27 @@ class ChesapeakeDataset(Dataset):
         label_name = self.label_dir / self.labels[idx]
 
         chip = np.load(chip_name).astype(np.float32)
+    
+        # Handle 11D chips by squeezing axis 8
+        if chip.shape[0] == 11:
+            #print(f"Warning: chip {chip_name} has 11 dimensions, squeezing axis 8")
+            bands_to_keep = [0,1,2,3,4,5,6,7,9,10]
+            chip = chip[bands_to_keep,...]
+
         label = np.load(label_name)
 
         # Remap labels to match desired classes
-        label_mapping = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 15: 6}
-        remapped_label = np.vectorize(label_mapping.get)(label)
+        #label_mapping = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 15: 6}
+        label_mapping =  {0: 0, 1: 1} #, 2: 0, 3: 1, 4: 0, 5: 0} # Edit - class mapping
+        #remapped_label = np.vectorize(label_mapping.get)(label)
+        # Replace None with a default value (like 0)
+        remapped_label = np.vectorize(lambda x: label_mapping.get(x, 0))(label)
+        #print("remapped_label[0] dtype:", remapped_label[0].dtype, "shape:", remapped_label[0].shape)
+        label_array = np.where(remapped_label[0] == None, 0, remapped_label[0]).astype(np.uint8)
 
         sample = {
             "pixels": self.transform(torch.from_numpy(chip)),
-            "label": torch.from_numpy(remapped_label[0]),
+            "label": torch.from_numpy(label_array),
             "time": torch.zeros(4),  # Placeholder for time information
             "latlon": torch.zeros(4),  # Placeholder for latlon information
         }
@@ -156,6 +172,8 @@ class ChesapeakeDataModule(L.LightningDataModule):
                 self.metadata,
                 self.platform,
             )
+            print(f"Train dataset size: {len(self.trn_ds)}")
+            print(f"Val dataset size: {len(self.val_ds)}")
 
     def train_dataloader(self):
         """
